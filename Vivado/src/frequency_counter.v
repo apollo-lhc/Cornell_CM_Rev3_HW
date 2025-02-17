@@ -1,30 +1,41 @@
-module frequency_counter #(
-    parameter CLOCK_FREQ = 100_000_000 // Default clock frequency is 100 MHz
-)(
-    input wire clk,        // Input clock
-    input wire reset,      // Reset signal
-    input wire signal_in,  // Signal whose frequency is to be measured
-    output reg [31:0] freq // Frequency count
+`timescale 1ns / 1ps
+// based on code originally written by Alex Madorsky. 
+// Lightly modified. Thanks Alex!
+
+module frequency_counter #(parameter CLOCK_FREQ = 32'd100_000_000)
+(
+    input logic ref_clk,
+    input logic f,
+    input logic reset,
+    output reg [31:0] freq
 );
 
-    reg [31:0] counter;    // Counter for clock cycles
-    reg [31:0] signal_count; // Counter for signal edges
+    (* async_reg *) reg [31:0] cnt;
+    reg [31:0] ref_cnt;
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge ref_clk or posedge reset)
+    begin
         if (reset) begin
-            counter <= 32'b0;
-            signal_count <= 32'b0;
-            freq <= 32'b0;
+            ref_cnt <= 32'h0;
+            freq <= 32'h0;
+        end else if (ref_cnt == CLOCK_FREQ) begin // 1 second just ended
+            freq <= cnt;
+            ref_cnt <= 32'h0;
         end else begin
-            counter <= counter + 1;
-            if (signal_in) begin
-                signal_count <= signal_count + 1;
-            end
-            if (counter == CLOCK_FREQ) begin // Count for 1 second
-                freq <= signal_count;
-                counter <= 32'b0;
-                signal_count <= 32'b0;
-            end
+            ref_cnt <= ref_cnt + 1;
+        end
+    end
+
+    wire cnt_rst = (ref_cnt[31:3] == 29'h0) ? 1'b1 : 1'b0;
+
+    always @(posedge f or posedge reset) 
+    begin
+        if (reset) begin
+            cnt <= 32'h0;
+        end else if (cnt_rst) begin
+            cnt <= 32'h0; 
+        end else begin
+            cnt <= cnt + 1;
         end
     end
 

@@ -1,2 +1,6 @@
 
 .DS_Store
+.directoryhash
+**/*.log
+**/*.jou
+Vivado/proj

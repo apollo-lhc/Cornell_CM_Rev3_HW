@@ -1,4 +1,18 @@
+// system verilog file
+// takes in all clocks and measures their frequency. 
+// information is available via a vio (for some) and 
+// via an i2c interface. On apollo that interface is routed
+// to the generic FPGA i2c data path.
+//
+// wittich 2/2025
 
+// the inputs are kept the same to map them to the
+// names that Charlie used in the contraint file.
+// they are reassigned to their local purpose in the 
+// verilog file.
+
+// the ones that are not used are (mostly) commented out in the module 
+// interface. 
 `default_nettype none
 `define C_GTY_REFCLKS_USED 14
 
@@ -222,9 +236,10 @@ module top (
     // input  wire hdr9,
     // input  wire hdr10
 );
-    // Differential clock input buffers -- logic clocks
-    wire clk_200, lf_x12_r0_clk, lf_x4_r0_clk, rt_x12_r0_clk, rt_x4_r0_clk, tcds40_clk, lhc_clk;
+    wire reset;
+    assign reset = mcu_to_f;    
 
+    wire clk_200; // system clock @ 200 MHz
     IBUFDS #(
         .DIFF_TERM("TRUE"),
         .IBUF_LOW_PWR("TRUE")
@@ -234,110 +249,55 @@ module top (
         .O(clk_200)
     );
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_lf_x12_r0_clk (
-        .I(p_lf_x12_r0_clk),
-        .IB(n_lf_x12_r0_clk),
-        .O(lf_x12_r0_clk)
+    wire clk_100, clk_325, clk_7;
+    clk_wiz_0 clkwizard(
+        .clk_200_in(clk_200),
+        .clk_100(clk_100),
+        .clk_325(clk_325),
+        .clk_7(clk_7), // used for I2C, really more like 6.9 MHz
+        .reset(reset)
     );
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_lf_x4_r0_clk (
-        .I(p_lf_x4_r0_clk),
-        .IB(n_lf_x4_r0_clk),
-        .O(lf_x4_r0_clk)
-    );
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_rt_x12_r0_clk (
-        .I(p_rt_x12_r0_clk),
-        .IB(n_rt_x12_r0_clk),
-        .O(rt_x12_r0_clk)
-    );
+    // Differential clock input buffers -- logic clocks
+`define C_LOGIC_CLK_USED 6
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_rt_x4_r0_clk (
-        .I(p_rt_x4_r0_clk),
-        .IB(n_rt_x4_r0_clk),
-        .O(rt_x4_r0_clk)
-    );
+    wire p_logic_clk [`C_LOGIC_CLK_USED-1:0];
+    wire n_logic_clk [`C_LOGIC_CLK_USED-1:0];
+    wire logic_clk [`C_LOGIC_CLK_USED-1:0];
+    assign p_logic_clk = {p_lf_x12_r0_clk, p_lf_x4_r0_clk, p_rt_x12_r0_clk, p_rt_x4_r0_clk, p_tcds40_clk, p_lhc_clk};
+    assign n_logic_clk = {n_lf_x12_r0_clk, n_lf_x4_r0_clk, n_rt_x12_r0_clk, n_rt_x4_r0_clk, n_tcds40_clk, n_lhc_clk};
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_tcds40_clk (
-        .I(p_tcds40_clk),
-        .IB(n_tcds40_clk),
-        .O(tcds40_clk)
-    );
+    wire [31:0] freq_logic_clk [`C_LOGIC_CLK_USED-1:0];
 
-    IBUFDS #(
-        .DIFF_TERM("TRUE"),
-        .IBUF_LOW_PWR("TRUE")
-    ) IBUFDS_lhc_clk (
-        .I(p_lhc_clk),
-        .IB(n_lhc_clk),
-        .O(lhc_clk)
-    );
+    genvar gj;
+    generate
+        for (gj = 0; gj < `C_LOGIC_CLK_USED; gj = gj + 1) 
+        begin
+            IBUFDS #(
+                .DIFF_TERM("TRUE"),
+                .IBUF_LOW_PWR("TRUE")
+            ) IBUFDS_logic_clk (
+                .I(p_logic_clk[gj]),
+                .IB(n_logic_clk[gj]),
+                .O(logic_clk[gj])
+            );
 
-    // UART
-    wire uart_tx, uart_rx;
-    IBUFDS IBUFDS_uart_rx (
-        .I(p_test_conn_0),
-        .IB(n_test_conn_0),
-        .O(uart_rx)
-    );
-    OBUFDS OBUFDS_uart_tx (
-        .O(p_test_conn_1),
-        .OB(n_test_conn_1),
-        .I(uart_tx)
-    );
+            frequency_counter #(
+                .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
+            ) freq_counter_logic_clk (
+                .ref_clk(clk_200),
+                .reset(reset),
+                .f(logic_clk[gj]),
+                .freq(freq_logic_clk[gj])
+            );
+        end
+    endgenerate
+
+
     
 
-    wire reset;
-    assign reset = mcu_to_f;    
-    
-    // Instantiate frequency counters
-    // lf_x12_r0_clk
-    wire [31:0] freq_lf_x12_r0_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_lf_x12_r0_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(lf_x12_r0_clk),
-        .freq(freq_lf_x12_r0_clk)
-    );
-    // lhc_clk
-    wire [31:0] freq_lhc_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_lhc_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(lhc_clk),
-        .freq(freq_lhc_clk)
-    );
-    // tcds40_clk
-    wire [31:0] freq_tcds40_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_tcds40_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(tcds40_clk),
-        .freq(freq_tcds40_clk)
-    );
-
-    // refclocks
+    // refclocks -- receive the refclocks and add frequency counters. 
 
     wire [`C_GTY_REFCLKS_USED-1:0] refclkp [1:0];
     wire [`C_GTY_REFCLKS_USED-1:0] refclkn [1:0];
@@ -421,13 +381,62 @@ module top (
             );
         end
     endgenerate
-    // ...existing code...
+
+    // Frequency counters for clocks used internally. 
+    // really only clk_7 is needed for I2C module
+    // clk_100
+    wire [31:0] freq_clk_100;
+    frequency_counter #(
+        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
+    ) freq_counter_clk_100 (
+        .ref_clk(clk_200),
+        .reset(reset),
+        .f(clk_100),
+        .freq(freq_clk_100)
+    );
+    
+    // clk_325
+    wire [31:0] freq_clk_325;
+    frequency_counter #(
+        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
+    ) freq_counter_clk_325 (
+        .ref_clk(clk_200),
+        .reset(reset),
+        .f(clk_325),
+        .freq(freq_clk_325)
+    );
+
+
+
+    // concatenate the frequency buses into a single array to pass
+    // to the register map module.
+    // 'status' array since it is modeled after status registers.
+    // Define the status array
+    wire [31:0] status_array [0:2*`C_GTY_REFCLKS_USED+`C_LOGIC_CLK_USED+2-1];
+
+    // Assign the values to the status array using a generate block
+    genvar i;
+    generate
+        for (i = 0; i < `C_LOGIC_CLK_USED; i = i + 1) begin
+            assign status_array[i] = freq_logic_clk[i];
+        end
+        assign status_array[`C_LOGIC_CLK_USED] = freq_clk_100;
+        assign status_array[`C_LOGIC_CLK_USED+1] = freq_clk_325;
+        for (i = 0; i < `C_GTY_REFCLKS_USED; i = i + 1) begin
+            assign status_array[`C_LOGIC_CLK_USED+2+i] = freqs0[i];
+            assign status_array[`C_LOGIC_CLK_USED+2+`C_GTY_REFCLKS_USED+i] = freqs1[i];
+        end
+    endgenerate
+
+
+
+
     wire [31:0] freq;
     wire [7:0] address;
 
     reg_map #(
         .NUM_RW(2),
-        .NUM_RO(2*`C_GTY_REFCLKS_USED+8)
+        .NUM_RO(2*`C_GTY_REFCLKS_USED+`C_LOGIC_CLK_USED+2)
     ) rmap (
         .clk(clk_200),
         .rst(reset),
@@ -435,13 +444,9 @@ module top (
         .wdata(longword),
         .write_en(i2c_dout_dv_delayed),
         .rdata(freq),
-        .status({freq_clk_325, freq_lhc_clk, freq_tcds40_clk, freq_lf_x12_r0_clk, freq_rt_x4_r0_clk, freq_rt_x12_r0_clk, freq_lf_x4_r0_clk, freq_clk_100, 
-                 freqs0[13], freqs0[12], freqs0[11], freqs0[10],
-                 freqs0[9], freqs0[8], freqs0[7], freqs0[6], freqs0[5], freqs0[4], freqs0[3], freqs0[2], freqs0[1], freqs0[0],
-                 freqs1[13], freqs1[12], freqs1[11], freqs1[10],
-                 freqs1[9], freqs1[8], freqs1[7], freqs1[6], freqs1[5], freqs1[4], freqs1[3], freqs1[2], freqs1[1], freqs1[0]
-                })
+        .status(status_array)
     );
+
     // One-to-four demux that puts an input byte into the right position in a longword
     reg [31:0] longword;
     reg [7:0] i2c_byte;
@@ -470,58 +475,6 @@ module top (
         end
     end
 
-    // rt_x4_r0_clk
-    wire [31:0] freq_rt_x4_r0_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_rt_x4_r0_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(rt_x4_r0_clk),
-        .freq(freq_rt_x4_r0_clk)
-    );
-    // rt_x12_r0_clk
-    wire [31:0] freq_rt_x12_r0_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_rt_x12_r0_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(rt_x12_r0_clk),
-        .freq(freq_rt_x12_r0_clk)
-    );
-    // lf_x4_r0_clk
-    wire [31:0] freq_lf_x4_r0_clk;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_lf_x4_r0_clk (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(lf_x4_r0_clk),
-        .freq(freq_lf_x4_r0_clk)
-    );
-
-    // clk_100
-    wire [31:0] freq_clk_100;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_clk_100 (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(clk_100),
-        .freq(freq_clk_100)
-    );
-    
-    // clk_325
-    wire [31:0] freq_clk_325;
-    frequency_counter #(
-        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
-    ) freq_counter_clk_325 (
-        .ref_clk(clk_200),
-        .reset(reset),
-        .f(clk_325),
-        .freq(freq_clk_325)
-    );
 
 
     wire i2c_scl_f_generic_o, i2c_scl_f_generic_i, i2c_scl_f_generic_t;
@@ -568,21 +521,6 @@ module top (
         end
     end
 
-//    // create a mux to address the frequency counters
-//    reg [31:0] freq;
-//    always @* begin
-//        case (address[4:2])
-//            3'b000: freq = freq_lf_x12_r0_clk;
-//            3'b001: freq = freq_lhc_clk;
-//            3'b010: freq = freq_tcds40_clk;
-//            3'b011: freq = freq_rt_x4_r0_clk;
-//            3'b100: freq = freq_rt_x12_r0_clk;
-//            3'b101: freq = freq_lf_x4_r0_clk;
-//            3'b110: freq = freq_clk_100;
-//            3'b111: freq = freq_clk_325;
-//            default: freq = 32'h5a5a5a5a;
-//        endcase
-//    end
     // mux to select byte within freq bus
     reg [7:0] freq_byte;
     always @* begin
@@ -595,26 +533,21 @@ module top (
         endcase
     end
     
-//    mux m(
-//        .data(freq),
-//        .out(freq_byte),
-//        .sel(address[1:0])
-//        );
-
+    // instantiate VIO block
     vio_freq (
         .clk(clk_200),
-        .probe_in0(freq_lf_x12_r0_clk),
-        .probe_in1(1'b0),
-        .probe_in2(1'b0),
-        .probe_in3(freq_rt_x4_r0_clk),
-        .probe_in4(freq_rt_x12_r0_clk),
-        .probe_in5(freq_lf_x4_r0_clk),
+        .probe_in0(freq_logic_clk[0]),
+        .probe_in1(freq_logic_clk[1]),
+        .probe_in2(freq_logic_clk[2]),
+        .probe_in3(freq_logic_clk[3]),
+        .probe_in4(freq_logic_clk[4]),
+        .probe_in5(freq_logic_clk[5]),
         .probe_in6(freq_clk_100),
         .probe_in7(freq_clk_325),
         .probe_out0()
     );
 
-
+    // SYSMON4E block 
     wire i2c_scl_f_sysmon_o, i2c_scl_f_sysmon_i, i2c_scl_f_sysmon_t;
     IOBUF I2C_SCLK_inst (
         .O(i2c_scl_f_sysmon_i), // Buffer output
@@ -630,15 +563,6 @@ module top (
         .T(i2c_sda_f_sysmon_t) // 3-state enable input, high=input, low=output
     );
 
-//  SYSMONE4   : In order to incorporate this function into the design,
-//   Verilog   : the following instance declaration needs to be placed
-//  instance   : in the body of the design code.  The instance name
-// declaration : (SYSMONE4_inst) and/or the port declarations within the
-//    code     : parenthesis may be changed to properly reference and
-//             : connect this function to the design.  All inputs
-//             : and outputs must be connected.
-
-//  <-----Cut code below this line---->
 
    // SYSMONE4: AMD Analog-to-Digital Converter and System Monitor
    //           Virtex UltraScale+
@@ -774,25 +698,25 @@ module top (
     // Assign the most significant bit of the counter to led_f1_red
     assign led_f1_red = counter[29];
     assign led_f1_blue = counter[28];
-    
-    wire [31:0] gpio_rtl_1_tri_o;
-    wire clk_100, clk_325, clk_7;
-    clk_wiz_0 clkwizard(
-        .clk_200_in(clk_200),
-        .clk_100(clk_100),
-        .clk_325(clk_325),
-        .clk_7(clk_7),
-        .reset(reset)
+    assign led_f1_green = reset;
+
+    // below here -- block design. Should be removed probably. UART is untested and 
+    // raison d'etre is unclear, but it is here for now.
+    // UART
+    wire uart_tx, uart_rx;
+    IBUFDS IBUFDS_uart_rx (
+        .I(p_test_conn_0),
+        .IB(n_test_conn_0),
+        .O(uart_rx)
     );
+    OBUFDS OBUFDS_uart_tx (
+        .O(p_test_conn_1),
+        .OB(n_test_conn_1),
+        .I(uart_tx)
+    );
+    
 
-
-//module block_top_wrapper
-//   (clk_100MHz,
-//    gpio_rtl_0_tri_i,
-//    gpio_rtl_1_tri_o,
-//    reset_rtl_0,
-//    uart_rtl_0_rxd,
-//    uart_rtl_0_txd);
+    wire [31:0] gpio_rtl_1_tri_o;
 
     // block design
     block_top_wrapper bd(
@@ -804,6 +728,4 @@ module top (
         .uart_rtl_0_txd(uart_tx)
         );
 
-//    assign led_f1_green = gpio_rtl_1_tri_o[0];
-    assign led_f1_green = reset;
 endmodule

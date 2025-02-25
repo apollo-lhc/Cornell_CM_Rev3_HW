@@ -643,3 +643,6 @@ move_dashboard_gadget -name {drc_1} -row 2 -col 0
 move_dashboard_gadget -name {timing_1} -row 0 -col 1
 move_dashboard_gadget -name {utilization_2} -row 1 -col 1
 move_dashboard_gadget -name {methodology_1} -row 2 -col 1
+
+launch_runs impl_1 -to_step write_bitstream -jobs 64
+

@@ -15,6 +15,7 @@
 // interface. 
 `default_nettype none
 `define C_GTY_REFCLKS_USED 14
+`define C_LOGIC_CLK_USED 6
 
 module top (
     input  wire p_clk_200,
@@ -252,15 +253,14 @@ module top (
     wire clk_100, clk_325, clk_7;
     clk_wiz_0 clkwizard(
         .clk_200_in(clk_200),
-        .clk_100(clk_100),
-        .clk_325(clk_325),
+        .clk_100(clk_100), // Microblaze
+        .clk_325(clk_325), // testing/unused
         .clk_7(clk_7), // used for I2C, really more like 6.9 MHz
         .reset(reset)
     );
 
 
     // Differential clock input buffers -- logic clocks
-`define C_LOGIC_CLK_USED 6
 
     wire p_logic_clk [`C_LOGIC_CLK_USED-1:0];
     wire n_logic_clk [`C_LOGIC_CLK_USED-1:0];
@@ -303,15 +303,15 @@ module top (
     wire [`C_GTY_REFCLKS_USED-1:0] refclkn [1:0];
     wire [`C_GTY_REFCLKS_USED-1:0] refclk [1:0];
 
-    assign refclkp[0] = {p_lf_r0_r, p_lf_r0_ab, p_lf_r0_ad, p_lf_r0_u, p_lf_r0_y, p_lf_r0_af, p_lf_r0_w,
-                         p_rt_r0_l, p_rt_r0_n, p_rt_r0_b, p_rt_r0_e, p_rt_r0_g, p_rt_r0_p, p_rt_r0_i};
-    assign refclkn[0] = {n_lf_r0_r, n_lf_r0_ab, n_lf_r0_ad, n_lf_r0_u, n_lf_r0_y, n_lf_r0_af, n_lf_r0_w,
-                         n_rt_r0_l, n_rt_r0_n, n_rt_r0_b, n_rt_r0_e, n_rt_r0_g, n_rt_r0_p, n_rt_r0_i};
+    assign refclkp[0] = {p_lf_r0_ab, p_lf_r0_ad, p_lf_r0_af, p_lf_r0_r, p_lf_r0_u, p_lf_r0_w, p_lf_r0_y,
+                         p_rt_r0_b, p_rt_r0_e, p_rt_r0_g, p_rt_r0_i, p_rt_r0_l, p_rt_r0_n, p_rt_r0_p};
+    assign refclkn[0] = {n_lf_r0_ab, n_lf_r0_ad, n_lf_r0_af, n_lf_r0_r, n_lf_r0_u, n_lf_r0_w, n_lf_r0_y,
+                         n_rt_r0_b, n_rt_r0_e, n_rt_r0_g, n_rt_r0_i, n_rt_r0_l, n_rt_r0_n, n_rt_r0_p};
 
-    assign refclkp[1] = {p_lf_r1_r, p_lf_r1_ab, p_lf_r1_ad, p_lf_r1_u, p_lf_r1_y, p_lf_r1_af, p_lf_r1_w,
-                         p_rt_r1_l, p_rt_r1_n, p_rt_r1_b, p_rt_r1_e, p_rt_r1_g, p_rt_r1_p, p_rt_r1_i};
-    assign refclkn[1] = {n_lf_r1_r, n_lf_r1_ab, n_lf_r1_ad, n_lf_r1_u, n_lf_r1_y, n_lf_r1_af, n_lf_r1_w,
-                         n_rt_r1_l, n_rt_r1_n, n_rt_r1_b, n_rt_r1_e, n_rt_r1_g, n_rt_r1_p, n_rt_r1_i};
+    assign refclkp[1] = {p_lf_r1_ab, p_lf_r1_ad, p_lf_r1_af, p_lf_r1_r, p_lf_r1_u, p_lf_r1_w, p_lf_r1_y,
+                         p_rt_r1_b, p_rt_r1_e, p_rt_r1_g, p_rt_r1_i, p_rt_r1_l, p_rt_r1_n, p_rt_r1_p};
+    assign refclkn[1] = {n_lf_r1_ab, n_lf_r1_ad, n_lf_r1_af, n_lf_r1_r, n_lf_r1_u, n_lf_r1_w, n_lf_r1_y,
+                         n_rt_r1_b, n_rt_r1_e, n_rt_r1_g, n_rt_r1_i, n_rt_r1_l, n_rt_r1_n, n_rt_r1_p};
 
     wire  [`C_GTY_REFCLKS_USED-1:0] clk_odiv2 [1:0];
     wire  [`C_GTY_REFCLKS_USED-1:0] clk_odiv2_b [1:0];
@@ -695,10 +695,16 @@ module top (
         end
     end
 
-    // Assign the most significant bit of the counter to led_f1_red
+    // Assign a significant bit of the counter to led_f*_red
     assign led_f1_red = counter[29];
     assign led_f1_blue = counter[28];
     assign led_f1_green = reset;
+
+    assign led_f2_red = counter[29];
+    assign led_f2_blue = counter[28];
+    assign led_f2_green = reset;
+
+
 
     // below here -- block design. Should be removed probably. UART is untested and 
     // raison d'etre is unclear, but it is here for now.
@@ -716,16 +722,31 @@ module top (
     );
     
 
-    wire [31:0] gpio_rtl_1_tri_o;
+    wire [31:0] ubaze_addr;
+    wire [31:0] ublaze_dbus;
 
     // block design
     block_top_wrapper bd(
         .clk_100MHz(clk_100),
-        .gpio_rtl_0_tri_i(freq),
-        .gpio_rtl_1_tri_o(gpio_rtl_1_tri_o),
+        .gpio_rtl_0_tri_i(ublaze_dbus),
+        .gpio_rtl_1_tri_o(ubaze_addr),
         .reset_rtl_0(reset),
         .uart_rtl_0_rxd(uart_rx),
         .uart_rtl_0_txd(uart_tx)
         );
+
+    reg_map #(
+        .NUM_RW(2),
+        .NUM_RO(2*`C_GTY_REFCLKS_USED+`C_LOGIC_CLK_USED+2)
+    ) rmap_ublaze (
+        .clk(clk_200),
+        .rst(reset),
+        .addr(ubaze_addr[4:0]),
+        .wdata(),
+        .write_en(),
+        .rdata(ublaze_dbus),
+        .status(status_array)
+    );
+
 
 endmodule

@@ -4,3 +4,8 @@
 **/*.log
 **/*.jou
 Vivado/proj
+Vivado/test_proc
+Vivado/bd/ip
+Vivado/bd/ipshared
+Vivado/project_1
+Vivado/bd/*.bda

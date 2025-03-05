@@ -15,7 +15,7 @@
 // interface. 
 `default_nettype none
 `define C_GTY_REFCLKS_USED 14
-`define C_LOGIC_CLK_USED 6
+`define C_LOGIC_CLK_USED 7
 
 module top (
     input  wire p_clk_200,
@@ -213,7 +213,7 @@ module top (
        input  wire p_test_conn_0,
        input  wire n_test_conn_0,
        output wire p_test_conn_1,
-       output wire n_test_conn_1
+       output wire n_test_conn_1,
     // input  wire p_test_conn_2,
     // input  wire n_test_conn_2,
     // input  wire p_test_conn_3,
@@ -222,10 +222,10 @@ module top (
     // input  wire n_test_conn_4,
     // input  wire test_conn_5,
     // output wire test_conn_6//,
-    // input  wire p_in_spare[2:0],
-    // input  wire n_in_spare[2:0],
-    // output wire p_out_spare[2:0],
-    // output wire n_out_spare[2:0],
+    input  wire p_in_spare[2:0],
+    input  wire n_in_spare[2:0],
+    output wire p_out_spare[2:0],
+    output wire n_out_spare[2:0]
     //input  wire hdr1,
     //output  wire hdr2
     // input  wire hdr3,
@@ -239,6 +239,11 @@ module top (
 );
     wire reset;
     assign reset = mcu_to_f;    
+
+    wire p_clk_200_ext;
+    wire n_clk_200_ext;
+    assign p_clk_200_ext = p_in_spare[2];
+    assign n_clk_200_ext = n_in_spare[2];
 
     wire clk_200; // system clock @ 200 MHz
     IBUFDS #(
@@ -259,14 +264,41 @@ module top (
         .reset(reset)
     );
 
+    // send the 200 MHz clock to the other FPGA via the spare pins
+    OBUFDS #(
+        .IOSTANDARD("DEFAULT")
+    ) OBUFDS_clk_200 (
+        .I(clk_200),
+        .O(p_out_spare[2]),
+        .OB(n_out_spare[2])
+    );
+    // It appears I need to make the other two entries in spare array differential
+    // explicitly for the bitstream generation to work
+    OBUFDS #(
+        .IOSTANDARD("DEFAULT")
+    ) OBUFDS_clk_100 (
+        .I(clk_100),
+        .O(p_out_spare[1]),
+        .OB(n_out_spare[1])
+    );
+    OBUFDS #(
+        .IOSTANDARD("DEFAULT")
+    ) OBUFDS_clk_325 (
+        .I(clk_325),
+        .O(p_out_spare[0]),
+        .OB(n_out_spare[0])
+    );
+
 
     // Differential clock input buffers -- logic clocks
 
     wire p_logic_clk [`C_LOGIC_CLK_USED-1:0];
     wire n_logic_clk [`C_LOGIC_CLK_USED-1:0];
     wire logic_clk [`C_LOGIC_CLK_USED-1:0];
-    assign p_logic_clk = {p_lf_x12_r0_clk, p_lf_x4_r0_clk, p_rt_x12_r0_clk, p_rt_x4_r0_clk, p_tcds40_clk, p_lhc_clk};
-    assign n_logic_clk = {n_lf_x12_r0_clk, n_lf_x4_r0_clk, n_rt_x12_r0_clk, n_rt_x4_r0_clk, n_tcds40_clk, n_lhc_clk};
+    assign p_logic_clk = {p_lf_x12_r0_clk, p_lf_x4_r0_clk, p_rt_x12_r0_clk, p_rt_x4_r0_clk, p_tcds40_clk, p_lhc_clk,
+                          p_clk_200_ext};
+    assign n_logic_clk = {n_lf_x12_r0_clk, n_lf_x4_r0_clk, n_rt_x12_r0_clk, n_rt_x4_r0_clk, n_tcds40_clk, n_lhc_clk,
+                          n_clk_200_ext};
 
     wire [31:0] freq_logic_clk [`C_LOGIC_CLK_USED-1:0];
 
@@ -440,7 +472,7 @@ module top (
     ) rmap (
         .clk(clk_200),
         .rst(reset),
-        .addr(address[6:2]),
+        .addr(address[7:2]),
         .wdata(longword),
         .write_en(i2c_dout_dv_delayed),
         .rdata(freq),
@@ -741,7 +773,7 @@ module top (
     ) rmap_ublaze (
         .clk(clk_200),
         .rst(reset),
-        .addr(ubaze_addr[4:0]),
+        .addr(ubaze_addr[5:0]),
         .wdata(),
         .write_en(),
         .rdata(ublaze_dbus),

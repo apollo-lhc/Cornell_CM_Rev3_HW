@@ -53,6 +53,7 @@ proc checkRequiredFiles { origin_dir} {
  "[file normalize "$origin_dir/src/toplevel.v"]"\
  "[file normalize "$origin_dir/ip/clk/clk_wiz_0.xci"]"\
  "[file normalize "$origin_dir/ip/vio/vio_freq.xci"]"\
+ "[file normalize "$origin_dir/ip/ibert/ibert_ultrascale_gty_c2c.xci"]"\
  "[file normalize "$origin_dir/constraints/VU13P_pins.xdc"]"\
  "[file normalize "$origin_dir/constraints/clocks.xdc"]"\
  "[file normalize "$origin_dir/constraints/design.xdc"]"\

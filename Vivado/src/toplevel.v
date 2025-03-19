@@ -42,14 +42,14 @@ module top (
     inout  wire i2c_sda_f_sysmon,
     inout  wire i2c_scl_f_generic,
     inout  wire i2c_sda_f_generic,
-    // input  wire p_tcds_in,
-    // input  wire n_tcds_in,
-    // output wire p_tcds_out,
-    // output wire n_tcds_out,
-    // input  wire p_tcds_from_zynq_a,
-    // input  wire n_tcds_from_zynq_a,
-    // output wire p_tcds_to_zynq_a,
-    // output wire n_tcds_to_zynq_a,
+    input  wire p_tcds_in,
+    input  wire n_tcds_in,
+    output wire p_tcds_out,
+    output wire n_tcds_out,
+    input  wire p_tcds_from_zynq_a,
+    input  wire n_tcds_from_zynq_a,
+    output wire p_tcds_to_zynq_a,
+    output wire n_tcds_to_zynq_a,
     // input  wire p_tcds_cross_recv_a,
     // input  wire n_tcds_cross_recv_a,
     // output wire p_tcds_cross_xmit_a,
@@ -65,14 +65,16 @@ module top (
     input  wire n_rt_r0_l,
     input  wire p_rt_r1_l,
     input  wire n_rt_r1_l,
-    //input  wire p_mgt_sm_to_f_1,
-    //input  wire n_mgt_sm_to_f_1,
-    // output wire p_mgt_f_to_sm_1,
-    // output wire n_mgt_f_to_sm_1,
-    // input  wire p_mgt_sm_to_f_2,
-    // input  wire n_mgt_sm_to_f_2,
-    // // output wire p_mgt_f_to_sm_2,
-    // output wire n_mgt_f_to_sm_2,
+    
+    input  wire p_mgt_sm_to_f_1,
+    input  wire n_mgt_sm_to_f_1,
+    output wire p_mgt_f_to_sm_1,
+    output wire n_mgt_f_to_sm_1,
+    input  wire p_mgt_sm_to_f_2,
+    input  wire n_mgt_sm_to_f_2,
+    output wire p_mgt_f_to_sm_2,
+    output wire n_mgt_f_to_sm_2,
+    
     // input  wire p_c2c_cross_recv_b,
     // input  wire n_c2c_cross_recv_b,
     // // output wire p_c2c_cross_xmit_b,
@@ -778,6 +780,111 @@ module top (
         .write_en(),
         .rdata(ublaze_dbus),
         .status(status_array)
+    );
+    
+    // IBERT for TCDS2 and C2C loopbacks
+    // Quad 220
+    // Ch 0: C2C1
+    // Ch 1: C2C2
+    // Ch 2: X
+    // Ch 3: X
+    // Quad 120
+    // Ch 0: TCDS
+    // Ch 1: X
+    // Ch 2: TCDS
+    // Ch 3: F1 <-> F2
+
+    // assign statements are MSB to LSP. Assume we are therefore quad 220, followed by 120,
+    // and with channels going from 3:0 in that order.
+    wire p_unused3, p_unused2, p_unused1;
+    wire n_unused3, n_unused2, n_unused1;
+    // outputs
+    wire [7:0] txn_o;
+    wire [7:0] txp_o;
+    // inputs
+    wire [7:0] rxn_i;
+    wire [7:0] rxp_i;
+
+    assign txp_o[0] = p_tcds_out;
+    assign txn_o[0] = n_tcds_out;
+
+    assign txp_o[2] = p_tcds_to_zynq_a;
+    assign txn_o[2] = n_tcds_to_zynq_a;
+
+    assign txp_o[4] = p_mgt_f_to_sm_1;
+    assign txn_o[4] = n_mgt_f_to_sm_1;
+
+    assign txp_o[5] = p_mgt_f_to_sm_2;
+    assign txn_o[5] = n_mgt_f_to_sm_2;
+
+    assign rxp_i = {1'b0, 1'b0, p_mgt_sm_to_f_2, p_mgt_sm_to_f_1, 1'b0, p_tcds_from_zynq_a, 1'b0, p_tcds_in};    
+    assign rxn_i = {1'b0, 1'b0, n_mgt_sm_to_f_2, n_mgt_sm_to_f_1, 1'b0, p_tcds_from_zynq_a, 1'b0, n_tcds_in};
+
+
+
+    wire [1:0] gtrefclk0_i;
+    wire [1:0] gtrefclk1_i;
+    wire [1:0] gtnorthrefclk0_i;
+    wire [1:0] gtnorthrefclk1_i;
+    wire [1:0] gtsouthrefclk0_i;
+    wire [1:0] gtsouthrefclk1_i;
+    wire [1:0] gtrefclk00_i;
+    wire [1:0] gtrefclk10_i;
+    wire [1:0] gtrefclk01_i;
+    wire [1:0] gtrefclk11_i;
+    wire [1:0] gtnorthrefclk00_i;
+    wire [1:0] gtnorthrefclk10_i;
+    wire [1:0] gtnorthrefclk01_i;
+    wire [1:0] gtnorthrefclk11_i;
+    wire [1:0] gtsouthrefclk00_i;
+    wire [1:0] gtsouthrefclk10_i;
+    wire [1:0] gtsouthrefclk01_i;
+    wire [1:0] gtsouthrefclk11_i;
+
+    assign gtrefclk0_i = {refclk[0][2], refclk[0][`C_GTY_REFCLKS_USED-1]};
+    assign gtrefclk1_i = {refclk[1][2], refclk[1][`C_GTY_REFCLKS_USED-1]};
+    assign gtnorthrefclk0_i = {1'b0, 1'b0};
+    assign gtnorthrefclk1_i = {1'b0, 1'b0};
+    assign gtsouthrefclk0_i = {1'b0, 1'b0};
+    assign gtsouthrefclk1_i = {1'b0, 1'b0};
+    assign gtrefclk00_i = gtrefclk0_i; // I don't know why I am doing this but the reference design does it
+    assign gtrefclk10_i = gtrefclk1_i; // ditto
+    assign gtrefclk01_i = {1'b0, 1'b0};
+    assign gtrefclk11_i = {1'b0, 1'b0};
+    assign gtnorthrefclk00_i = {1'b0, 1'b0};
+    assign gtnorthrefclk10_i = {1'b0, 1'b0};
+    assign gtnorthrefclk01_i = {1'b0, 1'b0};
+    assign gtnorthrefclk11_i = {1'b0, 1'b0};
+    assign gtsouthrefclk00_i = {1'b0, 1'b0};
+    assign gtsouthrefclk10_i = {1'b0, 1'b0};
+    assign gtsouthrefclk01_i = {1'b0, 1'b0};
+    assign gtsouthrefclk11_i = {1'b0, 1'b0};
+
+    
+    ibert_ultrascale_gty_c2c ibert(
+        .txn_o(txn_o),
+        .txp_o(txp_o),
+        .rxn_i(rxn_i),
+        .rxp_i(rxp_i),
+        .gtrefclk0_i(gtrefclk0_i),
+        .gtrefclk1_i(gtrefclk1_i),
+        .gtnorthrefclk0_i(gtnorthrefclk0_i),
+        .gtnorthrefclk1_i(gtnorthrefclk1_i),
+        .gtsouthrefclk0_i(gtsouthrefclk0_i),
+        .gtsouthrefclk1_i(gtsouthrefclk1_i),
+        .gtrefclk00_i(gtrefclk00_i),
+        .gtrefclk10_i(gtrefclk10_i),
+        .gtrefclk01_i(gtrefclk01_i),
+        .gtrefclk11_i(gtrefclk11_i),
+        .gtnorthrefclk00_i(gtnorthrefclk00_i),
+        .gtnorthrefclk10_i(gtnorthrefclk10_i),
+        .gtnorthrefclk01_i(gtnorthrefclk01_i),
+        .gtnorthrefclk11_i(gtnorthrefclk11_i),
+        .gtsouthrefclk00_i(gtsouthrefclk00_i),
+        .gtsouthrefclk10_i(gtsouthrefclk10_i),
+        .gtsouthrefclk01_i(gtsouthrefclk01_i),
+        .gtsouthrefclk11_i(gtsouthrefclk11_i),
+        .clk(clk_200)
     );
 
 

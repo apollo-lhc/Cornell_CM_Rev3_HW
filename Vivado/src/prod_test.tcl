@@ -28,7 +28,6 @@
 # 3. The following remote source files that were added to the original project:-
 #
 #    "/nfs/cms/tracktrigger/wittich/test_fpga/Cornell_CM_Rev3_HW/Vivado/bd/block_top.bd"
-#    "/nfs/cms/tracktrigger/wittich/prod_test.gen/sources_1/bd/block_top/hdl/block_top_wrapper.v"
 #    "/nfs/cms/tracktrigger/wittich/test_fpga/Cornell_CM_Rev3_HW/Vivado/src/frequency_counter.v"
 #    "/nfs/cms/tracktrigger/wittich/test_fpga/Cornell_CM_Rev3_HW/Vivado/src/reg_map.sv"
 #    "/nfs/cms/tracktrigger/wittich/test_fpga/Cornell_CM_Rev3_HW/Vivado/src/i2c_slave.vhd"
@@ -46,7 +45,6 @@ proc checkRequiredFiles { origin_dir} {
   set status true
   set files [list \
  "[file normalize "$origin_dir/bd/block_top.bd"]"\
- "[file normalize "$origin_dir/../../../prod_test.gen/sources_1/bd/block_top/hdl/block_top_wrapper.v"]"\
  "[file normalize "$origin_dir/src/frequency_counter.v"]"\
  "[file normalize "$origin_dir/src/reg_map.sv"]"\
  "[file normalize "$origin_dir/src/i2c_slave.vhd"]"\
@@ -188,7 +186,6 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 set obj [get_filesets sources_1]
 set files [list \
  [file normalize "${origin_dir}/bd/block_top.bd"] \
- [file normalize "${origin_dir}/../../../prod_test.gen/sources_1/bd/block_top/hdl/block_top_wrapper.v"] \
  [file normalize "${origin_dir}/src/frequency_counter.v"] \
  [file normalize "${origin_dir}/src/reg_map.sv"] \
  [file normalize "${origin_dir}/src/i2c_slave.vhd"] \
@@ -335,6 +332,12 @@ catch {
  set idrFlowPropertiesConstraints [get_param runs.disableIDRFlowPropertyConstraints]
  set_param runs.disableIDRFlowPropertyConstraints 1
 }
+
+# generate wrapper for block diagram file
+update_compile_order -fileset sources_1
+make_wrapper -files [get_files $origin_dir/bd/block_top.bd] -top
+add_files -norecurse $origin_dir/bd/prod_test.gen/sources_1/bd/block_top/hdl/block_top_wrapper.v
+update_compile_order -fileset sources_1
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {

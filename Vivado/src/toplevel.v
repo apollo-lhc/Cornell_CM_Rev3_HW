@@ -257,13 +257,22 @@ module top (
         .O(clk_200)
     );
 
-    wire clk_100, clk_325, clk_7;
+    wire clk_100, clk_325;
     clk_wiz_0 clkwizard(
         .clk_200_in(clk_200),
         .clk_100(clk_100), // Microblaze
         .clk_325(clk_325), // testing/unused
-        .clk_7(clk_7), // used for I2C, really more like 6.9 MHz
+        //.clk_7(clk_7), // used for I2C, really more like 6.9 MHz
         .reset(reset)
+    );
+    wire clk_7; // used for I2C slave
+    BUFGCE_DIV #(
+        .BUFGCE_DIVIDE(8)   // 100 MHz / 8 =~ 12.5 MHz
+    ) bufg_div_i2c (
+        .I  (clk_100),
+        .CE (1'b1),
+        .CLR(1'b0),
+        .O  (clk_7)
     );
 
     // send the 200 MHz clock to the other FPGA via the spare pins
@@ -440,6 +449,17 @@ module top (
         .freq(freq_clk_325)
     );
 
+    // clk_7
+    wire [31:0] freq_clk_7;
+    frequency_counter #(
+        .CLOCK_FREQ(200_000_000) // Set clock frequency to 200 MHz
+    ) freq_counter_clk_7 (
+        .ref_clk(clk_200),
+        .reset(reset),
+        .f(clk_7),
+        .freq(freq_clk_7)
+    );
+
 
 
     // concatenate the frequency buses into a single array to pass
@@ -575,7 +595,7 @@ module top (
         .probe_in2(freq_logic_clk[2]),
         .probe_in3(freq_logic_clk[3]),
         .probe_in4(freq_logic_clk[4]),
-        .probe_in5(freq_logic_clk[5]),
+        .probe_in5(freq_clk_7),
         .probe_in6(freq_clk_100),
         .probe_in7(freq_clk_325),
         .probe_out0()
@@ -861,7 +881,9 @@ module top (
     assign gtsouthrefclk11_i = {1'b0, 1'b0};
 
     
-    ibert_ultrascale_gty_c2c ibert(
+    ibert_ultrascale_gty_c2c 
+    ibert
+    (
         .txn_o(txn_o),
         .txp_o(txp_o),
         .rxn_i(rxn_i),

@@ -25,3 +25,7 @@ create_clock -period 25.000 -name tcds40_clk -waveform {0.000 12.500} [get_ports
 # not sure exactly what this does? 
 set_clock_groups -asynchronous -group lf_x12_r0_clk -group lf_x4_r0_clk -group rt_x12_r0_clk -group rt_x4_r0_clk -group tcds40_clk -group lhc_clk -group clk_200 -group clk_325_clk_wiz_0 -group clk_100_clk_wiz_0 -group clk_7_clk_wiz_0
 # includes generated clocks from clocking wizard
+
+# 
+set_property C_ENABLE_CLK_DIVIDER true [get_debug_cores dbg_hub]
+set_property C_CLK_INPUT_FREQ_HZ 200000000 [get_debug_cores dbg_hub] 

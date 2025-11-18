@@ -7,7 +7,7 @@
 // wittich 2/2025
 
 // the inputs are kept the same to map them to the
-// names that Charlie used in the contraint file.
+// names that Charlie used in the constraint file.
 // they are reassigned to their local purpose in the 
 // verilog file.
 
@@ -50,10 +50,10 @@ module top (
     input  wire n_tcds_from_zynq_a,
     output wire p_tcds_to_zynq_a,
     output wire n_tcds_to_zynq_a,
-    // input  wire p_tcds_cross_recv_a,
-    // input  wire n_tcds_cross_recv_a,
-    // output wire p_tcds_cross_xmit_a,
-    // output wire n_tcds_cross_xmit_a,
+    input  wire p_tcds_cross_recv_a,
+    input  wire n_tcds_cross_recv_a,
+    output wire p_tcds_cross_xmit_a,
+    output wire n_tcds_cross_xmit_a,
     // output wire p_tcds_recov_clk,
     // output wire n_tcds_recov_clk,
     input  wire p_tcds40_clk,
@@ -75,10 +75,10 @@ module top (
     output wire p_mgt_f_to_sm_2,
     output wire n_mgt_f_to_sm_2,
     
-    // input  wire p_c2c_cross_recv_b,
-    // input  wire n_c2c_cross_recv_b,
-    // // output wire p_c2c_cross_xmit_b,
-    // output wire n_c2c_cross_xmit_b,
+    input  wire p_c2c_cross_recv_b,
+    input  wire n_c2c_cross_recv_b,
+    output wire p_c2c_cross_xmit_b,
+    output wire n_c2c_cross_xmit_b,
     input  wire p_lf_r0_ad,
     input  wire p_lf_r0_ab,
     input  wire n_lf_r0_ab,
@@ -807,48 +807,71 @@ module top (
     // Ch 0: C2C1
     // Ch 1: C2C2
     // Ch 2: X
-    // Ch 3: X
+    // Ch 3: F1 <--> F2
     // Quad 120
-    // Ch 0: TCDS
+    // Ch 0: F1: TCDS loopback, F2: to F1 X0Y3
     // Ch 1: X
-    // Ch 2: TCDS
-    // Ch 3: F1 <-> F2
+    // Ch 2: F1: TCDS loopback
+    // Ch 3: F2: to F2 X0Y0
 
     // assign statements are MSB to LSP. Assume we are therefore quad 220, followed by 120,
     // and with channels going from 3:0 in that order.
-    wire p_unused3, p_unused2, p_unused1;
-    wire n_unused3, n_unused2, n_unused1;
     // outputs
     wire [7:0] txn_o;
     wire [7:0] txp_o;
     // inputs
     wire [7:0] rxn_i;
     wire [7:0] rxp_i;
-
+    // quad 120 -- TCDS 
+    // ch 0
     assign txp_o[0] = p_tcds_out;
     assign txn_o[0] = n_tcds_out;
 
+    assign rxp_i[0] = p_tcds_in;
+    assign rxn_i[0] = n_tcds_in;
+    // ch 1
     assign txp_o[2] = p_tcds_to_zynq_a;
     assign txn_o[2] = n_tcds_to_zynq_a;
 
+    assign rxp_i[2] = p_tcds_from_zynq_a;
+    assign rxn_i[2] = n_tcds_from_zynq_a;
+    // ch 3
+    assign txp_o[3] = p_tcds_cross_xmit_a;
+    assign txn_o[3] = n_tcds_cross_xmit_a;
+
+    assign rxp_i[3] = p_tcds_cross_recv_a;
+    assign rxn_i[3] = n_tcds_cross_recv_a;
+
+    // quad 220 -- C2C
+    // ch 0
     assign txp_o[4] = p_mgt_f_to_sm_1;
     assign txn_o[4] = n_mgt_f_to_sm_1;
 
+    assign rxp_i[4] = p_mgt_sm_to_f_1;
+    assign rxn_i[4] = n_mgt_sm_to_f_1;
+    // ch 1
     assign txp_o[5] = p_mgt_f_to_sm_2;
     assign txn_o[5] = n_mgt_f_to_sm_2;
 
-    assign rxp_i = {1'b0, 1'b0, p_mgt_sm_to_f_2, p_mgt_sm_to_f_1, 1'b0, p_tcds_from_zynq_a, 1'b0, p_tcds_in};    
-    assign rxn_i = {1'b0, 1'b0, n_mgt_sm_to_f_2, n_mgt_sm_to_f_1, 1'b0, p_tcds_from_zynq_a, 1'b0, n_tcds_in};
+    assign rxp_i[5] = p_mgt_sm_to_f_2;
+    assign rxn_i[5] = n_mgt_sm_to_f_2;
+    // ch 3
+    assign txp_o[7] = p_c2c_cross_xmit_b;
+    assign txn_o[7] = n_c2c_cross_xmit_b;
 
+    assign rxp_i[7] = p_c2c_cross_recv_b;
+    assign rxn_i[7] = n_c2c_cross_recv_b;
+    
 
-
-    wire [1:0] gtrefclk0_i;
-    wire [1:0] gtrefclk1_i;
-    wire [1:0] gtnorthrefclk0_i;
-    wire [1:0] gtnorthrefclk1_i;
-    wire [1:0] gtsouthrefclk0_i;
-    wire [1:0] gtsouthrefclk1_i;
-    wire [1:0] gtrefclk00_i;
+    // comments are PW attempt to document these files
+    // array size corresponds to the number of enabled quads; in this design, 2 (120 and 220)
+    wire [1:0] gtrefclk0_i; // refclk 0 in
+    wire [1:0] gtrefclk1_i; // refclk 1 in
+    wire [1:0] gtnorthrefclk0_i; // input to refclk0 from adjacent (N) refclk 0
+    wire [1:0] gtnorthrefclk1_i; // input to refclk1 from adjacent (N) refclk 1
+    wire [1:0] gtsouthrefclk0_i; // input to refclk0 from adjacent (S) refclk 0
+    wire [1:0] gtsouthrefclk1_i; // input to refclk1 from adjacent (S) refclk 1
+    wire [1:0] gtrefclk00_i; // not sure what these are
     wire [1:0] gtrefclk10_i;
     wire [1:0] gtrefclk01_i;
     wire [1:0] gtrefclk11_i;
@@ -861,24 +884,53 @@ module top (
     wire [1:0] gtsouthrefclk01_i;
     wire [1:0] gtsouthrefclk11_i;
 
-    assign gtrefclk0_i = {refclk[0][2], refclk[0][`C_GTY_REFCLKS_USED-1]};
-    assign gtrefclk1_i = {refclk[1][2], refclk[1][`C_GTY_REFCLKS_USED-1]};
-    assign gtnorthrefclk0_i = {1'b0, 1'b0};
-    assign gtnorthrefclk1_i = {1'b0, 1'b0};
-    assign gtsouthrefclk0_i = {1'b0, 1'b0};
-    assign gtsouthrefclk1_i = {1'b0, 1'b0};
-    assign gtrefclk00_i = gtrefclk0_i; // I don't know why I am doing this but the reference design does it
-    assign gtrefclk10_i = gtrefclk1_i; // ditto
-    assign gtrefclk01_i = {1'b0, 1'b0};
-    assign gtrefclk11_i = {1'b0, 1'b0};
-    assign gtnorthrefclk00_i = {1'b0, 1'b0};
-    assign gtnorthrefclk10_i = {1'b0, 1'b0};
-    assign gtnorthrefclk01_i = {1'b0, 1'b0};
-    assign gtnorthrefclk11_i = {1'b0, 1'b0};
-    assign gtsouthrefclk00_i = {1'b0, 1'b0};
-    assign gtsouthrefclk10_i = {1'b0, 1'b0};
-    assign gtsouthrefclk01_i = {1'b0, 1'b0};
-    assign gtsouthrefclk11_i = {1'b0, 1'b0};
+    localparam int QUAD120 = `C_GTY_REFCLKS_USED-1; 
+    localparam int QUAD220 = 2;
+
+    //assign gtrefclk0_i = {refclk[0][QUAD220], refclk[0][QUAD120]}; // MSB to LSB: Refclk 1, Refclk 0
+    //assign gtrefclk1_i = {refclk[1][QUAD220], refclk[1][QUAD120]}; // ditto
+    
+    // quad 120
+    assign gtrefclk0_i[0] = refclk[0][QUAD120];
+    assign gtrefclk1_i[0] = refclk[1][QUAD120];
+
+    assign gtnorthrefclk0_i[0] = 1'b0; // unused 
+    assign gtnorthrefclk1_i[0] = 1'b0; // unused 
+    assign gtsouthrefclk0_i[0] = 1'b0; // unused 
+    assign gtsouthrefclk1_i[0] = 1'b0; // unused 
+    assign gtrefclk00_i[0] = gtrefclk0_i[0]; // 
+    assign gtrefclk10_i[0] = gtrefclk1_i[0]; // 
+    assign gtrefclk01_i[0] = gtrefclk0_i[0]; // 
+    assign gtrefclk11_i[0] = gtrefclk1_i[0]; // 
+    assign gtnorthrefclk00_i[0] = 1'b0; // 
+    assign gtnorthrefclk10_i[0] = 1'b0;
+    assign gtnorthrefclk01_i[0] = 1'b0;
+    assign gtnorthrefclk11_i[0] = 1'b0;
+    assign gtsouthrefclk00_i[0] = 1'b0;
+    assign gtsouthrefclk10_i[0] = 1'b0;
+    assign gtsouthrefclk01_i[0] = 1'b0;
+    assign gtsouthrefclk11_i[0] = 1'b0;
+    
+    // quad 220
+    assign gtrefclk0_i[1] = refclk[0][QUAD220];
+    assign gtrefclk1_i[1] = refclk[1][QUAD220];
+    
+    assign gtnorthrefclk0_i[1] = 1'b0; // unused 
+    assign gtnorthrefclk1_i[1] = 1'b0; // unused 
+    assign gtsouthrefclk0_i[1] = 1'b0; // unused 
+    assign gtsouthrefclk1_i[1] = 1'b0; // unused 
+    assign gtrefclk00_i[1] = gtrefclk0_i[1]; // 
+    assign gtrefclk10_i[1] = gtrefclk1_i[1]; // 
+    assign gtrefclk01_i[1] = gtrefclk0_i[1]; // 
+    assign gtrefclk11_i[1] = gtrefclk1_i[1]; // 
+    assign gtnorthrefclk00_i[1] = 1'b0; // 
+    assign gtnorthrefclk10_i[1] = 1'b0;
+    assign gtnorthrefclk01_i[1] = 1'b0;
+    assign gtnorthrefclk11_i[1] = 1'b0;
+    assign gtsouthrefclk00_i[1] = 1'b0;
+    assign gtsouthrefclk10_i[1] = 1'b0;
+    assign gtsouthrefclk01_i[1] = 1'b0;
+    assign gtsouthrefclk11_i[1] = 1'b0;
 
     
     ibert_ultrascale_gty_c2c 

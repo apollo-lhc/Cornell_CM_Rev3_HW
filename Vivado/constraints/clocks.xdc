@@ -29,3 +29,5 @@ set_clock_groups -asynchronous -group lf_x12_r0_clk -group lf_x4_r0_clk -group r
 # 
 set_property C_ENABLE_CLK_DIVIDER true [get_debug_cores dbg_hub]
 set_property C_CLK_INPUT_FREQ_HZ 200000000 [get_debug_cores dbg_hub] 
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets clk_200]

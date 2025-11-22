@@ -588,7 +588,8 @@ module top (
     end
     
     // instantiate VIO block
-    vio_freq (
+    wire vio_reset;
+    vio_freq v1(
         .clk(clk_200),
         .probe_in0(freq_logic_clk[0]),
         .probe_in1(freq_logic_clk[1]),
@@ -598,7 +599,7 @@ module top (
         .probe_in5(freq_clk_7),
         .probe_in6(freq_clk_100),
         .probe_in7(freq_clk_325),
-        .probe_out0()
+        .probe_out0(vio_reset)
     );
 
     // SYSMON4E block 
@@ -752,7 +753,7 @@ module top (
     // Assign a significant bit of the counter to led_f*_red
     assign led_f1_red = counter[29];
     assign led_f1_blue = counter[28];
-    assign led_f1_green = reset;
+    assign led_f1_green = reset | vio_reset;
 
     assign led_f2_red = counter[29];
     assign led_f2_blue = counter[28];

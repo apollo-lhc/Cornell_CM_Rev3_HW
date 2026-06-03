@@ -10,7 +10,7 @@
  * Design ID:                                          R0Av3X03
  * Includes Pre/Post Download Control Register Writes: Yes
  * Created By:                                         ClockBuilder Pro v4.14 [2024-12-02]
- * Timestamp:                                          2026-06-03 14:24:50 GMT-04:00
+ * Timestamp:                                          2026-06-03 14:52:55 GMT-04:00
  *
  * A complete design report corresponding to this export is included at the end 
  * of this header file.
@@ -236,14 +236,14 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
 	{ 0x0234, 0x0B },
 	{ 0x0235, 0x00 },
 	{ 0x0236, 0x00 },
-	{ 0x0237, 0x00 },
-	{ 0x0238, 0x00 },
-	{ 0x0239, 0x8C },
+	{ 0x0237, 0x40 },
+	{ 0x0238, 0x2E },
+	{ 0x0239, 0xDB },
 	{ 0x023A, 0x00 },
 	{ 0x023B, 0x00 },
 	{ 0x023C, 0x00 },
 	{ 0x023D, 0x00 },
-	{ 0x023E, 0x80 },
+	{ 0x023E, 0xC8 },
 	{ 0x0247, 0x00 },
 	{ 0x0248, 0x00 },
 	{ 0x0249, 0x00 },
@@ -650,13 +650,13 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * Project File:       D:\6089-127_CM_V3\GitHub\ClockBuilderPRO\test_projects\Si5395-RevA-R0Av3X03-Project.slabtimeproj
  * Design ID:          R0Av3X03
  * Created By:         ClockBuilder Pro v4.14 [2024-12-02]
- * Timestamp:          2026-06-03 14:24:50 GMT-04:00
+ * Timestamp:          2026-06-03 14:52:54 GMT-04:00
  * 
  * Design Notes
  * ============
  * 
  * Synthesizer R0A for Apollo CMv3, 6089-127-RevA, schematic sheet 2.06
- * v3X03: 320 MHz on all outputs, using 48 MHz crystal.
+ * v3X03: 320.63 MHz on all outputs, using 48 MHz crystal.
  * 
  * Design Rule Check
  * =================
@@ -669,7 +669,7 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * 
  * Device Grade
  * ============
- * Maximum Output Frequency: 320 MHz
+ * Maximum Output Frequency: 320.63 MHz
  * Frequency Synthesis Mode: Integer
  * Frequency Plan Grade:     D
  * Minimum Base OPN:         Si5395D*
@@ -706,23 +706,23 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * 
  * Outputs:
  *   OUT0A: Unused
- *    OUT0: 320 MHz (Free Run)
+ *    OUT0: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT1: 320 MHz (Free Run)
+ *    OUT1: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT2: 320 MHz (Free Run)
+ *    OUT2: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT3: 320 MHz (Free Run)
+ *    OUT3: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT4: 320 MHz (Free Run)
+ *    OUT4: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT5: 320 MHz (Free Run)
+ *    OUT5: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT6: 320 MHz (Free Run)
+ *    OUT6: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT7: 320 MHz (Free Run)
+ *    OUT7: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
- *    OUT8: 320 MHz (Free Run)
+ *    OUT8: 320.63 MHz (Free Run)
  *          Enabled, LVDS 1.8 V
  *    OUT9: Unused
  *   OUT9A: Unused
@@ -732,9 +732,9 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * 
  * Priority: maximize the number of low jitter outputs
  * 
- * Fvco = 13.44 GHz
+ * Fvco = 13.46646 GHz
  * Fpfd = N/A (DSPLL free run only mode enabled)
- * Fms0 = 640 MHz
+ * Fms0 = 641.26 MHz
  * 
  * P dividers:
  *    P0  = Unused
@@ -743,20 +743,20 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  *    P3  = Unused
  *    Pxaxb = 1
  * 
- * MXAXB = 280
+ * MXAXB = 280.55125
  * M = N/A (DSPLL free run only mode enabled)
  * N dividers:
  *    N0:
  *       Value: 21
- *       OUT0: 320 MHz
- *       OUT1: 320 MHz
- *       OUT2: 320 MHz
- *       OUT3: 320 MHz
- *       OUT4: 320 MHz
- *       OUT5: 320 MHz
- *       OUT6: 320 MHz
- *       OUT7: 320 MHz
- *       OUT8: 320 MHz
+ *       OUT0: 320.63 MHz
+ *       OUT1: 320.63 MHz
+ *       OUT2: 320.63 MHz
+ *       OUT3: 320.63 MHz
+ *       OUT4: 320.63 MHz
+ *       OUT5: 320.63 MHz
+ *       OUT6: 320.63 MHz
+ *       OUT7: 320.63 MHz
+ *       OUT8: 320.63 MHz
  *    N1:
  *       Unused
  *    N2:
@@ -809,15 +809,15 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * =========================
  * N0: 21
  * 
- *    OUT0  320 MHz
- *    OUT1  320 MHz
- *    OUT2  320 MHz
- *    OUT3  320 MHz
- *    OUT4  320 MHz
- *    OUT5  320 MHz
- *    OUT6  320 MHz
- *    OUT7  320 MHz
- *    OUT8  320 MHz
+ *    OUT0  320.63 MHz
+ *    OUT1  320.63 MHz
+ *    OUT2  320.63 MHz
+ *    OUT3  320.63 MHz
+ *    OUT4  320.63 MHz
+ *    OUT5  320.63 MHz
+ *    OUT6  320.63 MHz
+ *    OUT7  320.63 MHz
+ *    OUT8  320.63 MHz
  * 
  *    Desired Dynamic Skew Step:  ±0.000 ps
  *    Actual Dynamic Skew Step:   ±0 ps
@@ -847,32 +847,32 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * ----------------------------  -------  -------  ----  ----
  * Typical Ta, Voltage, Current  869 mW   815 mW   25 C  39 C
  * 
- *                                   -----------------------
- *                                           Typical        
- *                                   -----------------------
- *                                   Voltage  Current  Power
- *        Output  Frequency  Format    (V)     (mA)    (mW) 
- *        ------  ---------  ------  -------  -------  -----
- * VDD                                  1.80      125    225
- * VDDA                                 3.30      114    377
- * VDDO0  OUT0A      Unused             1.80       16     30
- *        OUT0      320 MHz    LVDS
- * VDDO1  OUT1      320 MHz    LVDS     1.80       16     30
- * VDDO2  OUT2      320 MHz    LVDS     1.80       16     30
- * VDDO3  OUT3      320 MHz    LVDS     1.80       16     30
- * VDDO4  OUT4      320 MHz    LVDS     1.80       16     30
- * VDDO5  OUT5      320 MHz    LVDS     1.80       16     30
- * VDDO6  OUT6      320 MHz    LVDS     1.80       16     30
- * VDDO7  OUT7      320 MHz    LVDS     1.80       16     30
- * VDDO8  OUT8      320 MHz    LVDS     1.80       16     30
- * VDDO9  OUT9       Unused        
- *        OUT9A      Unused        
- *                                   -------  -------  -----
- *                                      1.80      273    492
- *                                      3.30      114    377
- *                                   -------  -------  -----
- *                                     Total             869
- *                                   -------  -------  -----
+ *                                    -----------------------
+ *                                            Typical        
+ *                                    -----------------------
+ *                                    Voltage  Current  Power
+ *        Output  Frequency   Format    (V)     (mA)    (mW) 
+ *        ------  ----------  ------  -------  -------  -----
+ * VDD                                   1.80      125    226
+ * VDDA                                  3.30      114    377
+ * VDDO0  OUT0A       Unused             1.80       16     30
+ *        OUT0    320.63 MHz    LVDS
+ * VDDO1  OUT1    320.63 MHz    LVDS     1.80       16     30
+ * VDDO2  OUT2    320.63 MHz    LVDS     1.80       16     30
+ * VDDO3  OUT3    320.63 MHz    LVDS     1.80       16     30
+ * VDDO4  OUT4    320.63 MHz    LVDS     1.80       16     30
+ * VDDO5  OUT5    320.63 MHz    LVDS     1.80       16     30
+ * VDDO6  OUT6    320.63 MHz    LVDS     1.80       16     30
+ * VDDO7  OUT7    320.63 MHz    LVDS     1.80       16     30
+ * VDDO8  OUT8    320.63 MHz    LVDS     1.80       16     30
+ * VDDO9  OUT9        Unused        
+ *        OUT9A       Unused        
+ *                                    -------  -------  -----
+ *                                       1.80      273    492
+ *                                       3.30      114    377
+ *                                    -------  -------  -----
+ *                                      Total             869
+ *                                    -------  -------  -----
  * 
  * Note:
  * 
@@ -1153,8 +1153,8 @@ si5395_reva_register_t const si5395_reva_registers[SI5395_REVA_REG_CONFIG_NUM_RE
  * 0x0233[4]     P2_FRACN_EN                 0                  0x0              
  * 0x0234[3:0]   P3_FRACN_MODE               11                 0xB              
  * 0x0234[4]     P3_FRACN_EN                 0                  0x0              
- * 0x0235[43:0]  MXAXB_NUM                   601295421440       0x08C00000000    
- * 0x023B[31:0]  MXAXB_DEN                   2147483648         0x80000000       
+ * 0x0235[43:0]  MXAXB_NUM                   941373784064       0x0DB2E400000    
+ * 0x023B[31:0]  MXAXB_DEN                   3355443200         0xC8000000       
  * 0x0247[23:0]  R0A_REG                     0                  0x000000         
  * 0x024A[23:0]  R0_REG                      0                  0x000000         
  * 0x024D[23:0]  R1_REG                      0                  0x000000         
